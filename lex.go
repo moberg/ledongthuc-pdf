@@ -469,6 +469,14 @@ func (b *buffer) readArray() object {
 		if tok == nil || tok == keyword("]") {
 			break
 		}
+		// Bail on io.EOF so a malformed PDF whose content stream
+		// never reaches a closing ']' cannot drive this loop into
+		// unbounded `append` growth (which on some inputs allocates
+		// many GB before OOM-ing the process). readDict already
+		// has the same guard.
+		if tok == io.EOF {
+			break
+		}
 		b.unreadToken(tok)
 		x = append(x, b.readObject())
 	}
